@@ -51,6 +51,18 @@ class Model {
     private $__dirty = null;   // this flags if attributes have been changed (needed for update operation)
     private $__validation_messages = array();
 
+    
+    // --------------------------------------------------------------------------------------//
+    // __ FUNCTIONS                                                                      //
+    // --------------------------------------------------------------------------------------//
+
+    /**
+     * Initializes a Model instance. 
+     * @param array $data
+     * 
+     * @return object the Model instance
+     */
+ 
     function __construct(array $data = array()) {
         $currentclass = get_called_class();
         $attributes = $currentclass::$attributes;
@@ -60,17 +72,103 @@ class Model {
                 if (array_key_exists("default", $parameters)) {
                     $defaultvalue = $parameters["default"];
                 }
-//                if (array_key_exists("pk", $parameters)) {
-//                    if ($this->__pkfieldname === null) {
-//                        $this->__pkfieldname = $name;
-//                    }
-//                }
             }
             $this->$name = $defaultvalue;
         }
         $this->assignAttributeValuesFromData($data);
         $this->cleanFlagDirty();
     }
+
+    public function __set($property, $value) {
+        $currentclass = get_called_class();
+        $attributes = $currentclass::$attributes;
+        if (array_key_exists($property, $attributes)) {
+            $this->__attributes[$property] = $value;
+            $this->setFlagDirty($property);
+        } else {
+            throw new RecordAttributeDoesNotExistException("Attribute '" . $property . "' does not exist in model '" . $currentclass . "'.");
+        }
+    }
+
+    public function __get($property) {
+        $currentclass = get_called_class();
+        $attributes = $currentclass::$attributes;
+        if (array_key_exists($property, $attributes)) {
+            if (array_key_exists($property, $this->__attributes)) {
+                return $this->__attributes[$property];
+            } else {
+                return null;
+            }
+        } else {
+            throw new RecordAttributeDoesNotExistException("Attribute '" . $property . "' does not exist in model '" . $currentclass . "'.");
+        }
+    }
+
+    // --------------------------------------------------------------------------------------//
+    // EVENT FUNCTIONS                                                                       //
+    // Override these functions in your models to implement extra checks, or alter values    //
+    // --------------------------------------------------------------------------------------//
+    
+    public function before_save() {
+        return true;
+    }
+
+    public function after_save() {
+        return true;
+    }
+
+    public function before_validation() {
+        return true;
+    }
+
+    public function after_validation() {
+        return true;
+    }
+
+    public function before_insert() {
+        return true;
+    }
+
+    public function after_insert() {
+        return true;
+    }
+
+    public function before_validation_on_insert() {
+        return true;
+    }
+
+    public function after_validation_on_insert() {
+        return true;
+    }
+
+    public function before_update() {
+        return true;
+    }
+
+    public function after_update() {
+        return true;
+    }
+
+    public function before_validation_on_update() {
+        return true;
+    }
+
+    public function after_validation_on_update() {
+        return true;
+    }
+
+    public function before_delete() {
+        return true;
+    }
+
+    public function after_delete() {
+        return true;
+    }
+
+    
+    // --------------------------------------------------------------------------------------//
+    // GETTER FUNCTIONS                                                                      //
+    // --------------------------------------------------------------------------------------//
 
     public static function getPKFieldName() {
         $currentclass = get_called_class();
@@ -130,6 +228,32 @@ class Model {
         return $options;
     }
 
+    public static function getAttribute($attributename) {
+        $currentclass = get_called_class();
+        $attributes = $currentclass::$attributes;
+        if (array_key_exists($attributename, $attributes)) {
+            return $attributes[$attributename];
+        }
+        return null;
+    }
+    
+    public function getValidationMessages() {
+        return $this->__validation_messages;
+    }
+
+    public function getClassName() {
+        return get_called_class();
+    }
+
+    public function getDirtyAttributes() {
+        return $this->__dirty;
+    }
+
+    
+    // --------------------------------------------------------------------------------------//
+    // SETTER FUNCTIONS                                                                      //
+    // --------------------------------------------------------------------------------------//
+
     private function assignAttributeValuesFromData(array &$data) {
         if (count($data) > 0) {
             $currentclass = get_called_class();
@@ -143,104 +267,48 @@ class Model {
         }
     }
 
-    public static function getAttribute($attributename) {
+    private function setTimeStamps() {
+        $now = date('Y-m-d H:i:s');
         $currentclass = get_called_class();
-        $attributes = $currentclass::$attributes;
-        if (array_key_exists($attributename, $attributes)) {
-            return $attributes[$attributename];
+
+        if ($currentclass::attributeExists("updated_at")) {
+            $this->updated_at = $now;
         }
-        return null;
+        if ($currentclass::attributeExists("created_at") && $this->isNewRecord()) {
+            $this->created_at = $now;
+        }
     }
     
-    public static function doesAttributeExists($attributename) {
-        $currentclass = get_called_class();
-        $attributes = $currentclass::$attributes;
-        if (array_key_exists($attributename, $attributes)) {
-            return true;
-        }
-        return false;
-    }
-
-    public function __set($property, $value) {
-        $currentclass = get_called_class();
-        $attributes = $currentclass::$attributes;
-        if (array_key_exists($property, $attributes)) {
-            $this->__attributes[$property] = $value;
-            $this->flag_dirty($property);
-        } else {
-            throw new RecordAttributeDoesNotExistException("Attribute '" . $property . "' does not exist in model '" . $currentclass . "'.");
-        }
-    }
-
-    public function __get($property) {
-        $currentclass = get_called_class();
-        $attributes = $currentclass::$attributes;
-        if (array_key_exists($property, $attributes)) {
-            if (array_key_exists($property, $this->__attributes)) {
-                return $this->__attributes[$property];
-            } else {
-                return null;
-            }
-        } else {
-            throw new RecordAttributeDoesNotExistException("Attribute '" . $property . "' does not exist in model '" . $currentclass . "'.");
-        }
-    }
-
-    public function getValidationMessages() {
-        return $this->__validation_messages;
-    }
-
-    public function getClassName() {
-        return get_called_class();
+    public function setFlagDirty($name) {
+        if (!$this->__dirty)
+            $this->__dirty = array();
+        $this->__dirty[$name] = true;
     }
 
     public function cleanFlagDirty() {
         $this->__dirty = array();
     }
 
-    public function getDirtyAttributes() {
-        return $this->__dirty;
-    }
-
-    public function flag_dirty($name) {
-        if (!$this->__dirty)
-            $this->__dirty = array();
-        $this->__dirty[$name] = true;
-    }
-
     public function clearAttributeValues() {
         $this->__attributes = array();
     }
 
-    public static function initialize() {
-        $modeldirectories = Config::getInstance()->get(Config::MODELDIRECTORIES);
-        foreach ($modeldirectories as $dir) {
-            $path = Config::getInstance()->get(Config::BASEPATH) . "/" . $dir;
-            $root = realpath(isset($path) ? $path : '.');
+    
+    // --------------------------------------------------------------------------------------//
+    // CHECKER FUNCTIONS                                                                     //
+    // --------------------------------------------------------------------------------------//
 
-            $files = glob($root . "/*.php");
-            foreach ($files as $idx => $filepath) {
-                requireFile($filepath);
-            }
-        }
+    public function isNewRecord() {
+        return $this->__newrecord;
     }
 
-    public static function createOrUpdateTable() {
+    public static function attributeExists($attributename) {
         $currentclass = get_called_class();
-        $connection = ConnectionManager::getInstance()->get($currentclass::$connection);
-        if (!$currentclass::tableExists()) {
-            $createstatement = $currentclass::generateSQLCreateTable();
-            $result = $connection->query($createstatement);
-            echo "<hr>" . $createstatement . "</hr>";
-            echo "<br>Result: <pre>";
-            print_r($result);
-            echo "</pre>";
-        } else {
-            echo "<br>table already exists<br>";
-//           $alterstatement = $currentclass::generateSQLAlterTable();
-//           $result = $connection->query($alterstatement);
+        $attributes = $currentclass::$attributes;
+        if (array_key_exists($attributename, $attributes)) {
+            return true;
         }
-        $connection->close();
+        return false;
     }
 
     public static function tableExists() {
@@ -259,177 +327,11 @@ class Model {
         return $result !== FALSE;
     }
 
-    public static function generateSQLAlterTabel() {
-// TODO
-    }
 
-    public static function generateSQLCreateTable() {
-        $sqlstring = "";
-        $currentclass = get_called_class();
-        if (count($currentclass::$attributes) > 0) {
-            $primarykey = "";
-            $uniquekey = "";
-            $indexes = array();
-            $sqlstring .= "CREATE TABLE `" . $currentclass::$table_name . "` ( \n";
-            $i = 0;
-            foreach ($currentclass::$attributes as $name => $parameters) {
-                if ($i > 0) {
-                    $sqlstring .= ",\n";
-                }
-// setting some defaults
-                $type = "varchar";
-                $length = 255;
-                $autoinc = false;
-                $pk = false;
-                $default = "NULL";
-                $mandatory = false;
-                if (is_array($parameters)) {
-                    if (array_key_exists("type", $parameters)) {
-                        $type = $parameters["type"];
-                    }
-                    if (array_key_exists("length", $parameters)) {
-                        $length = $parameters["length"];
-                    }
-                    if (array_key_exists("indexed", $parameters)) {
-                        if ($parameters["indexed"] === true) {
-                            $indexes[] = $name;
-                        }
-                    }
-                    if (array_key_exists("autoinc", $parameters)) {
-                        $autoinc = $parameters["autoinc"];
-                    }
-                    if (array_key_exists("default", $parameters)) {
-                        $default = $parameters["default"];
-                    }
-                    if (array_key_exists("pk", $parameters)) {
-                        if ($primarykey === "") {
-                            $pk = $parameters["pk"];
-                            $primarykey = $name;
-                            $default = "NOT NULL";
-                            $uniquekey = $name;
-                        }
-                    }
-                    if (array_key_exists("mandatory", $parameters)) {
-                        $mandatory = $parameters["mandatory"];
-                    }
-                }
-                $collationstring = "";
-                if (strtolower($type) === "varchar") {
-                    $collationstring = "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
-                }
-                $typestring = $type;
-                if (!isEmpty($length) && strtolower($type) !== "date" && strtolower($type) !== "timestamp") {
-                    $typestring .= "(" . $length . ")";
-                }
-                $defaultstring = "";
-                if (!isEmpty($default) && $default !== "NOT NULL") {
-                    $defaultstring = " DEFAULT " . $default;
-                } else {
-                    $defaultstring = $default;
-                }
-                $autoincstring = "";
-                if (!isEmpty($autoinc)) {
-                    if ($autoinc === true) {
-                        $autoincstring = "AUTO_INCREMENT";
-                    }
-                }
-                $mandatorystring = "";
-                if ($mandatory === true) {
-                    $mandatorystring = "NOT NULL";
-                }
-                $sqlstring .= "`" . $name . "` " . $typestring . " " . $collationstring . " " . $mandatorystring . " " . $autoincstring . " " . $defaultstring;
-                $i++;
-            }
-            if ($primarykey !== "") {
-                $sqlstring .= ",\n";
-                $sqlstring .= "PRIMARY KEY (`" . $primarykey . "`) \n";
-            }
-            if ($uniquekey !== "" || $primarykey !== "") {
-                $sqlstring .= ",\n";
-                $sqlstring .= "UNIQUE KEY (`" . $uniquekey . "`) \n";
-            }
-            foreach ($indexes as $index) {
-                $sqlstring .= ",\n";
-                $sqlstring .= "KEY `idx_" . $index . "` (`" . $index . "`) \n";
-            }
-            $i = 1;
-            foreach ($currentclass::$compound_indexes as $compound_index) {
-                if (is_array($compound_index)) {
-                    $sqlstring .= ",\n";
-                    $sqlstring .= " KEY `idx_multi_" . $i . "` (";
-                    $j = 0;
-                    foreach ($compound_index as $name) {
-                        if ($j > 0) {
-                            $sqlstring .= ",";
-                        }
-                        $sqlstring .= "`" . $name . "`";
-                        $j++;
-                    }
-                    $sqlstring .= ")";
-                    $i++;
-                }
-            }
-            $sqlstring .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n";
-        }
-        return $sqlstring;
-    }
-
-    public function before_save() {
-        return true;
-    }
-
-    public function after_save() {
-        return true;
-    }
-
-    public function before_validation() {
-        return true;
-    }
-
-    public function after_validation() {
-        return true;
-    }
-
-    public function before_insert() {
-        return true;
-    }
-
-    public function after_insert() {
-        return true;
-    }
-
-    public function before_validation_on_insert() {
-        return true;
-    }
-
-    public function after_validation_on_insert() {
-        return true;
-    }
-
-    public function before_update() {
-        return true;
-    }
-
-    public function after_update() {
-        return true;
-    }
-
-    public function before_validation_on_update() {
-        return true;
-    }
-
-    public function after_validation_on_update() {
-        return true;
-    }
-
-    public function before_delete() {
-        return true;
-    }
-
-    public function after_delete() {
-        return true;
-    }
-
+    // --------------------------------------------------------------------------------------//
+    // FIND FUNCTIONS                                                                        //
+    // --------------------------------------------------------------------------------------//
+    
     public static function all() {
         return call_user_func_array('static::find', array_merge(array('all'), func_get_args()));
     }
@@ -461,10 +363,6 @@ class Model {
         $options = array();
         if (is_array($array)) {
             $lastparameters = $array[count($array) - 1]; // get the last item. The first one will be either record keys, "all", "first", "last",...
-        //    echo "processfindoptions<pre>";
-        //    print_r($lastparameters);
-        //    echo"</pre>";
-
             if (is_array($lastparameters)) {
                 if (ArrayHelper::getInstance($lastparameters)->isAssociative()) {
                     $keys = array_keys($lastparameters);
@@ -643,10 +541,38 @@ class Model {
         throw new NoRecordsFoundException("record not found");
     }
 
-    public function isNewRecord() {
-        return $this->__newrecord;
+
+    // --------------------------------------------------------------------------------------//
+    // VALIDATION FUNCTIONS                                                                  //
+    // --------------------------------------------------------------------------------------//
+    
+    public function validate($validate = true) {
+        // override this function in the model if needed!
+        if (!$this->before_validation()) {
+            return false;
+        }
+        $this->__validation_messages = array();
+        if ($validate === true) {
+            $currentclass = get_called_class();
+            $validationresult = $currentclass::validate(); // call the validate function (either the empty one in this Model.php or the overriden version in the model
+            if ($validationresult === false) {
+                return false;
+            }
+            $validators = $currentclass::$validators;
+            $validation = new Validation($validators, $this);
+            $this->__validation_messages = $validation->getMessages();
+            if ($validation->getResult() === false) {
+                return false;
+            }
+        }
+        $this->after_validation();
+        return true;
     }
 
+    // --------------------------------------------------------------------------------------//
+    // STORAGE FUNCTIONS                                                                     //
+    // --------------------------------------------------------------------------------------//
+    
     public function save($validate = true) {
         if (!$this->before_save()) {
             return false;
@@ -661,38 +587,6 @@ class Model {
         $this->after_save();
     }
 
-    public function validate() {
-        // override this function in the model if needed!
-        return true;
-    }
-
-    public function _validate($validate = true) {
-        if (!$this->before_validation()) {
-            return false;
-        }
-        $this->__validation_messages = array();
-        if ($validate === true) {
-            $currentclass = get_called_class();
-            $validationresult = $currentclass::validate(); // call the validate function (either the empty one in this Model.php or the overriden version in the model
-            if ($validationresult === false) {
-//                echo "validationresult = false<br>";
-                return false;
-            }
-           // echo "currentclass = " . $currentclass . "<br>";
-            $validators = $currentclass::$validators;
-            $validation = new Validation($validators, $this);
-            $this->__validation_messages = $validation->getMessages();
-            if ($validation->getResult() === false) {
-//                echo "validation has return false<pre>";
-//                print_r($validation->getMessages());
-//                echo "</pre>";
-                return false;
-            }
-        }
-        $this->after_validation();
-        return true;
-    }
-
     public function insert($validate = true) {
         if (!$this->before_insert()) {
             return false;
@@ -700,18 +594,15 @@ class Model {
 
         $this->setTimeStamps();
         $currentclass = get_called_class();
-//        echo "insert - validate " . $validate . " <br>";
         if (!$this->before_validation_on_insert()) {
             return false;
         }
-        if ($this->_validate($validate) === false) {
-//            echo "validate failed<br>";
+        if ($this->validate($validate) === false) {
             return false;
         }
         if (!$this->after_validation_on_insert()) {
             return false;
         }
-//        echo "validate successfull<br>";
         $dbname = ConnectionManager::getInstance()->get($currentclass::$connection)->getDatabase();
         $sqlstring = "INSERT INTO " . $dbname . "." . $currentclass::$table_name . " \n";
         $sqlstring .= "( \n";
@@ -759,7 +650,7 @@ class Model {
                 if (!$this->before_validation_on_update()) {
                     return false;
                 }
-                if ($this->_validate($validate) === false) {
+                if ($this->validate($validate) === false) {
                     return false;
                 }
                 if (!$this->after_validation_on_update()) {
@@ -800,7 +691,7 @@ class Model {
         $now = date('Y-m-d H:i:s');
         $currentclass = get_called_class();
         if (self::getPKFieldName() !== null) { // model has a primary key
-            if ($currentclass::doesAttributeExists("deleted_at")) {
+            if ($currentclass::attributeExists("deleted_at")) {
                 $this->deleted_at = $now;
 
                 $dbname = ConnectionManager::getInstance()->get($currentclass::$connection)->getDatabase();
@@ -835,17 +726,143 @@ class Model {
         }
         $this->after_delete();
     }
-
-    private function setTimeStamps() {
-        $now = date('Y-m-d H:i:s');
+               
+    
+    // --------------------------------------------------------------------------------------//
+    // DATABASE TABLE MANAGEMENT FUNCTIONS                                                   //
+    // --------------------------------------------------------------------------------------//
+    
+    public static function createOrUpdateTable() {
         $currentclass = get_called_class();
+        $connection = ConnectionManager::getInstance()->get($currentclass::$connection);
+        if (!$currentclass::tableExists()) {
+            $createstatement = $currentclass::generateSQLCreateTable();
+            $result = $connection->query($createstatement);
+            echo "<hr>" . $createstatement . "</hr>";
+            echo "<br>Result: <pre>";
+            print_r($result);
+            echo "</pre>";
+        } else {
+            echo "<br>table already exists<br>";
+//           $alterstatement = $currentclass::generateSQLAlterTable();
+//           $result = $connection->query($alterstatement);
+        }
+        $connection->close();
+    }
 
-        if ($currentclass::doesAttributeExists("updated_at")) {
-            $this->updated_at = $now;
+    public static function generateSQLAlterTabel() {
+// TODO
+    }
+
+    public static function generateSQLCreateTable() {
+        $sqlstring = "";
+        $currentclass = get_called_class();
+        if (count($currentclass::$attributes) > 0) {
+            $primarykey = "";
+            $uniquekey = "";
+            $indexes = array();
+            $sqlstring .= "CREATE TABLE `" . $currentclass::$table_name . "` ( \n";
+            $i = 0;
+            foreach ($currentclass::$attributes as $name => $parameters) {
+                if ($i > 0) {
+                    $sqlstring .= ",\n";
+                }
+// setting some defaults
+                $type = "varchar";
+                $length = 255;
+                $autoinc = false;
+                $pk = false;
+                $default = "NULL";
+                $mandatory = false;
+                if (is_array($parameters)) {
+                    if (array_key_exists("type", $parameters)) {
+                        $type = $parameters["type"];
+                    }
+                    if (array_key_exists("length", $parameters)) {
+                        $length = $parameters["length"];
+                    }
+                    if (array_key_exists("indexed", $parameters)) {
+                        if ($parameters["indexed"] === true) {
+                            $indexes[] = $name;
+                        }
+                    }
+                    if (array_key_exists("autoinc", $parameters)) {
+                        $autoinc = $parameters["autoinc"];
+                    }
+                    if (array_key_exists("default", $parameters)) {
+                        $default = $parameters["default"];
+                    }
+                    if (array_key_exists("pk", $parameters)) {
+                        if ($primarykey === "") {
+                            $pk = $parameters["pk"];
+                            $primarykey = $name;
+                            $default = "NOT NULL";
+                            $uniquekey = $name;
+                        }
+                    }
+                    if (array_key_exists("mandatory", $parameters)) {
+                        $mandatory = $parameters["mandatory"];
+                    }
+                }
+                $collationstring = "";
+                if (strtolower($type) === "varchar") {
+                    $collationstring = "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+                }
+                $typestring = $type;
+                if (!isEmpty($length) && strtolower($type) !== "date" && strtolower($type) !== "timestamp") {
+                    $typestring .= "(" . $length . ")";
+                }
+                $defaultstring = "";
+                if (!isEmpty($default) && $default !== "NOT NULL") {
+                    $defaultstring = " DEFAULT " . $default;
+                } else {
+                    $defaultstring = $default;
+                }
+                $autoincstring = "";
+                if (!isEmpty($autoinc)) {
+                    if ($autoinc === true) {
+                        $autoincstring = "AUTO_INCREMENT";
+                    }
+                }
+                $mandatorystring = "";
+                if ($mandatory === true) {
+                    $mandatorystring = "NOT NULL";
+                }
+                $sqlstring .= "`" . $name . "` " . $typestring . " " . $collationstring . " " . $mandatorystring . " " . $autoincstring . " " . $defaultstring;
+                $i++;
+            }
+            if ($primarykey !== "") {
+                $sqlstring .= ",\n";
+                $sqlstring .= "PRIMARY KEY (`" . $primarykey . "`) \n";
+            }
+            if ($uniquekey !== "" || $primarykey !== "") {
+                $sqlstring .= ",\n";
+                $sqlstring .= "UNIQUE KEY (`" . $uniquekey . "`) \n";
+            }
+            foreach ($indexes as $index) {
+                $sqlstring .= ",\n";
+                $sqlstring .= "KEY `idx_" . $index . "` (`" . $index . "`) \n";
+            }
+            $i = 1;
+            foreach ($currentclass::$compound_indexes as $compound_index) {
+                if (is_array($compound_index)) {
+                    $sqlstring .= ",\n";
+                    $sqlstring .= " KEY `idx_multi_" . $i . "` (";
+                    $j = 0;
+                    foreach ($compound_index as $name) {
+                        if ($j > 0) {
+                            $sqlstring .= ",";
+                        }
+                        $sqlstring .= "`" . $name . "`";
+                        $j++;
+                    }
+                    $sqlstring .= ")";
+                    $i++;
+                }
+            }
+            $sqlstring .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n";
         }
-        if ($currentclass::doesAttributeExists("created_at") && $this->isNewRecord()) {
-            $this->created_at = $now;
-        }
+        return $sqlstring;
     }
 
 }
