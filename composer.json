@@ -1,0 +1,33 @@
+{
+    "name": "afeys/flphpdb",
+    "description": "Simple database layer inspired by activerecord",
+    "keywords": [
+        "database", "activerecord", "model"
+    ],
+    "homepage": "https://github.com/afeys/flphpdb",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Andy Feys",
+            "email": "gitprojects@feys.be",
+            "homepage": "http://www.feys.be"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~4.0"
+    },
+    "support": {
+        "issues": "https://github.com/afeys/flphpdb/issues",
+        "source": "https://github.com/afeys/flphpdb/"
+    },
+    "autoload": {
+        "psr-4": { "flphpdb\\": "src/" },
+        "files": ["src/init.php"]
+    },
+    "autoload-dev": {
+        "classmap": [ "tests" ]
+    }
+}
