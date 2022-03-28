@@ -249,6 +249,24 @@ class Model {
         return $this->__dirty;
     }
 
+    public function toArray() {
+        $returnvalue = array();
+        $currentclass = get_called_class();
+        $attributes = $currentclass::$attributes;
+        foreach ($currentclass::$attributes as $name => $parameters) {
+            $defaultvalue = null;
+            if (is_array($parameters)) {
+                if (array_key_exists("default", $parameters)) {
+                    $defaultvalue = $parameters["default"];
+                }
+            }
+            $returnvalue[$name] = $defaultvalue;
+            if ($this->$name !== "" ) {
+                $returnvalue[$name] = $this->$name;
+            }
+        }
+        return $returnvalue;
+    }
     
     // --------------------------------------------------------------------------------------//
     // SETTER FUNCTIONS                                                                      //
