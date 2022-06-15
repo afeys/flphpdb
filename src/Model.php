@@ -1,4 +1,4 @@
-<?php
+<?php //
 
     /*
       Book::find('all');
@@ -45,13 +45,17 @@ class Model {
     static $compound_indexes = array();
     static $connection;
     static $table_name;
+    static $related_views = array();
     static $default_sortfield; // if none specified in the model, then use the PK field
+    static $setters = array(); // the getters and setters can be overriden in the modelclass,
+    static $getters = array(); // these take precedence over any default getters and setters.
+
     private $__attributes = array();
     private $__newrecord = true; // this is true for a new record, false for an already existing record
     private $__dirty = null;   // this flags if attributes have been changed (needed for update operation)
     private $__validation_messages = array();
+    private $__ignore_attributes = false;
 
-    
     // --------------------------------------------------------------------------------------//
     // __ FUNCTIONS                                                                      //
     // --------------------------------------------------------------------------------------//
@@ -63,7 +67,7 @@ class Model {
      * @return object the Model instance
      */
  
-    function __construct(array $data = array()) {
+    function __construct(array $data = array(), $ignoreattributes = false) {
         $currentclass = get_called_class();
         $attributes = $currentclass::$attributes;
         foreach ($currentclass::$attributes as $name => $parameters) {
@@ -75,6 +79,7 @@ class Model {
             }
             $this->$name = $defaultvalue;
         }
+        $this->__ignore_attributes = $ignoreattributes;
         $this->assignAttributeValuesFromData($data);
         $this->cleanFlagDirty();
     }
@@ -86,13 +91,38 @@ class Model {
             $this->__attributes[$property] = $value;
             $this->setFlagDirty($property);
         } else {
-            throw new RecordAttributeDoesNotExistException("Attribute '" . $property . "' does not exist in model '" . $currentclass . "'.");
+            if ($this->__ignore_attributes == true) {
+                // as can be found on https://www.php.net/manual/en/pdostatement.fetchall.php
+                // pdo will return the data from the record as an array, but both an array element
+                // with the name of the property, and a numbered index will exist!
+                // Array
+                //  (
+                //      [name] => apple
+                //      [0] => apple
+                //      [colour] => red
+                //      [1] => red
+                //  )
+                // so we will first check if $property is numeric, if it is, ignore it
+                if (!is_numeric($property)) {
+                    $this->__attributes[$property] = $value;
+                }
+            } else {
+                throw new RecordAttributeDoesNotExistException("Attribute '" . $property . "' does not exist in model '" . $currentclass . "'.");
+            }
         }
     }
 
     public function __get($property) {
         $currentclass = get_called_class();
         $attributes = $currentclass::$attributes;
+        
+        // check for special getter
+        if (in_array("get_$property",static::$getters))
+        {
+            $name = "get_$property";
+            $value = $this->$name();
+            return $value;
+        }
         if (array_key_exists($property, $attributes)) {
             if (array_key_exists($property, $this->__attributes)) {
                 return $this->__attributes[$property];
@@ -100,10 +130,37 @@ class Model {
                 return null;
             }
         } else {
-            throw new RecordAttributeDoesNotExistException("Attribute '" . $property . "' does not exist in model '" . $currentclass . "'.");
+            if ($this->__ignore_attributes == true) {
+                return $this->__attributes[$property];
+            } else {
+                throw new RecordAttributeDoesNotExistException("Attribute '" . $property . "' does not exist in model '" . $currentclass . "'.");
+            }
         }
     }
 
+    // --------------------------------------------------------------------------------------//
+    // INITIALISER FUNCTIONS                                                                 //
+    // This HAS to be run before using the models, run this in your application              //
+    // initialisation routine                                                                //
+    // --------------------------------------------------------------------------------------//
+    public static function initialize($modeldirectories) {
+        if (!is_array($modeldirectories)) {
+            $modeldirectory = $modeldirectories;
+            $modeldirectories = array();
+            $modeldirectories[] = $modeldirectory;
+        }
+        foreach ($modeldirectories as $dir) {
+            $path = $dir;
+            $root = realpath(isset($path) ? $path : '.');
+
+            $files = glob($root . "/*.php");
+            foreach ($files as $idx => $filepath) {
+                require_once "$filepath";
+            }
+        }
+    }
+
+    
     // --------------------------------------------------------------------------------------//
     // EVENT FUNCTIONS                                                                       //
     // Override these functions in your models to implement extra checks, or alter values    //
@@ -170,6 +227,15 @@ class Model {
     // GETTER FUNCTIONS                                                                      //
     // --------------------------------------------------------------------------------------//
 
+    public function getExtendedAttributeValues() {
+        // this return the __attributes property. This property contains the full set of 
+        // datafields. when the find is done with a 'usetable' option (to get data from a view
+        // for instance, which contains more fields then the actual table), then you can use this function 
+        // to access the returned data.
+        // if for instance the main table contains a user_id field, and the view uses a join to the user
+        // table and returns the username, then this is the way to access that extra info
+        return $this->__attributes;
+    }
     public static function getPKFieldName() {
         $currentclass = get_called_class();
         foreach ($currentclass::$attributes as $name => $parameters) {
@@ -253,6 +319,7 @@ class Model {
         $returnvalue = array();
         $currentclass = get_called_class();
         $attributes = $currentclass::$attributes;
+        if ($this->__ignore_attributes == false) {
         foreach ($currentclass::$attributes as $name => $parameters) {
             $defaultvalue = null;
             if (is_array($parameters)) {
@@ -262,6 +329,11 @@ class Model {
             }
             $returnvalue[$name] = $defaultvalue;
             if ($this->$name !== "" ) {
+                $returnvalue[$name] = $this->$name;
+            }
+        }
+        } else {
+            foreach($this->__attributes as $name => $__value) {
                 $returnvalue[$name] = $this->$name;
             }
         }
@@ -277,8 +349,12 @@ class Model {
             $currentclass = get_called_class();
             $attributes = $currentclass::$attributes;
             foreach ($data as $name => $value) {
-                if (array_key_exists($name, $attributes)) {
+                if ($this->__ignore_attributes == true) {
                     $this->$name = $value;
+                } else {
+                    if (array_key_exists($name, $attributes)) {
+                        $this->$name = $value;
+                    }
                 }
             }
             $this->__newrecord = false;
@@ -367,7 +443,7 @@ class Model {
     }
     
 
-    static $VALID_OPTIONS = array('select', 'conditions', 'limit', 'offset', 'order', 'group', 'having');
+    static $VALID_OPTIONS = array('usetable', 'select', 'conditions', 'limit', 'offset', 'order', 'group', 'having');
 
     // select = comma separated list of fields to return (default = *)
     // conditions = where statement
@@ -396,6 +472,21 @@ class Model {
             }
         }
         return $options;
+    }
+
+    public static function findBySQL($sql) {
+        $returnvalue = array();
+        $currentclass = get_called_class();
+        $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
+        $conn = $connection->getConnection();
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+        foreach ($rows as $row) {
+            $model = new $currentclass($row, true);  // second parameter is true, because we want to ignore the fixed attributes here, a findbysql typically is not on the main table, but on a join, or on a related view.
+            $returnvalue[] = $model;
+        }
+        return $returnvalue;
     }
 
     public static function findByPk() {
@@ -518,7 +609,7 @@ class Model {
             }
             $args = array_slice($args, 1);
             $num_args--;
-            $connection = ConnectionManager::getInstance()->get($currentclass::$connection);
+            $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
             $qb = QueryBuilder::getInstance($currentclass, $options, $connection);
             $statement = $qb->getPreparedStatementSelect();
             $statement->execute($qb->getValues());
@@ -541,7 +632,12 @@ class Model {
                 } else {
                     $returnvalue = array();
                     foreach ($rows as $row) {
-                        $model = new $currentclass($row);
+                        if (array_key_exists("usetable",$options)) {
+                            $model = new $currentclass($row, true);
+                        } else {
+                            $model = new $currentclass($row);
+                        }
+                        
                         $returnvalue[] = $model;
                     }
                 }

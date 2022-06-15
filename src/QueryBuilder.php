@@ -29,10 +29,16 @@ class QueryBuilder {
             }
         }
         if ($this->connection === null) {
-            $this->connection = ConnectionManager::getInstance()->get($classname::$connection);
+            $this->connection = ConnectionManager::getInstance()->getConnection($classname::$connection);
         }
         $this->database = $this->connection->getDatabase();
-        $this->table = $classname::$table_name;
+        
+//        echo "<pre>"; print_r($options); echo "</pre>";
+        if (array_key_exists("usetable",$options)) {
+            $this->table = $options['usetable'];
+        } else {
+            $this->table = $classname::$table_name;
+        }
         $this->parseOptions($options);
     }
 
@@ -203,7 +209,7 @@ class QueryBuilder {
 
     private function blockDeletedRecordsIfNeeded() {
         $currentclass = $this->classname;
-        if ($currentclass::doesAttributeExists("deleted_at")) {
+        if ($currentclass::attributeExists("deleted_at")) {
             $deletefilter = " isnull(deleted_at) ";
             if (strlen(trim($this->where)) > 0) {
                 $this->where = "(" . $this->where . ") and " . $deletefilter;
@@ -233,9 +239,9 @@ class QueryBuilder {
             $limit = intval($this->limit);
             $sql .= " LIMIT " . $offset . "," . $limit;
         }
-//echo $sql;        
         $conn = $this->connection->getConnection();
         $stmt = $conn->prepare($sql);
+       //echo $sql;
         //$conn->setAttribute( \PDO::ATTR_ERRMODE, \PDO::ERRMODE_WARNING );
         return $stmt;
     }
