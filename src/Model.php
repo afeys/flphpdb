@@ -660,7 +660,12 @@ class Model {
     // VALIDATION FUNCTIONS                                                                  //
     // --------------------------------------------------------------------------------------//
     
-    public function validate($validate = true) {
+    public function validate() {
+        // override this function in the model if needed!
+        return true;
+    }
+    
+    public function _validate($validate = true) {
         // override this function in the model if needed!
         if (!$this->before_validation()) {
             return false;
@@ -711,7 +716,7 @@ class Model {
         if (!$this->before_validation_on_insert()) {
             return false;
         }
-        if ($this->validate($validate) === false) {
+        if ($this->_validate($validate) === false) {
             return false;
         }
         if (!$this->after_validation_on_insert()) {
@@ -764,7 +769,7 @@ class Model {
                 if (!$this->before_validation_on_update()) {
                     return false;
                 }
-                if ($this->validate($validate) === false) {
+                if ($this->_validate($validate) === false) {
                     return false;
                 }
                 if (!$this->after_validation_on_update()) {
