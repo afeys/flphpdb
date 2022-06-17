@@ -410,7 +410,7 @@ class Model {
 // Run it in try/catch in case PDO is in ERRMODE_EXCEPTION.
         try {
             $currentclass = get_called_class();
-            $connection = ConnectionManager::getInstance()->get($currentclass::$connection);
+            $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
             $table = $currentclass::$table_name;
             $result = $connection->query("SELECT 1 FROM $table LIMIT 1");
         } catch (Exception $e) {
@@ -722,7 +722,7 @@ class Model {
         if (!$this->after_validation_on_insert()) {
             return false;
         }
-        $dbname = ConnectionManager::getInstance()->get($currentclass::$connection)->getDatabase();
+        $dbname = ConnectionManager::getInstance()->getConnection($currentclass::$connection)->getDatabase();
         $sqlstring = "INSERT INTO " . $dbname . "." . $currentclass::$table_name . " \n";
         $sqlstring .= "( \n";
         $valuesstring = "";
@@ -749,7 +749,7 @@ class Model {
         $sqlstring .= "( \n";
         $sqlstring .= $valuesstring;
         $sqlstring .= "); \n";
-        $connection = ConnectionManager::getInstance()->get($currentclass::$connection);
+        $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
         $result = $connection->query($sqlstring);
         $this->id = $connection->lastInsertId();
         $this->__newrecord = false;
@@ -775,7 +775,7 @@ class Model {
                 if (!$this->after_validation_on_update()) {
                     return false;
                 }
-                $dbname = ConnectionManager::getInstance()->get($currentclass::$connection)->getDatabase();
+                $dbname = ConnectionManager::getInstance()->getConnection($currentclass::$connection)->getDatabase();
                 $sqlstring = "UPDATE " . $dbname . "." . $currentclass::$table_name . " \n";
                 $sqlstring .= "SET \n";
                 $i = 0;
@@ -791,7 +791,7 @@ class Model {
                 $sqlstring .= "WHERE `" . self::getPKFieldName() . "` = " . $this->$pkfieldname;
                 $sqlstring .= "; \n";
 //                echo $sqlstring . "<br>";
-                $connection = ConnectionManager::getInstance()->get($currentclass::$connection);
+                $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
                 $result = $connection->query($sqlstring);
                 $connection->close();
             } else {
@@ -813,14 +813,14 @@ class Model {
             if ($currentclass::attributeExists("deleted_at")) {
                 $this->deleted_at = $now;
 
-                $dbname = ConnectionManager::getInstance()->get($currentclass::$connection)->getDatabase();
+                $dbname = ConnectionManager::getInstance()->getConnection($currentclass::$connection)->getDatabase();
                 $sqlstring = "UPDATE " . $dbname . "." . $currentclass::$table_name . " \n";
                 $sqlstring .= "SET `deleted_at` = '" . $this->deleted_at . "' \n";
                 $pkfieldname = self::getPKFieldName();
                 $sqlstring .= "WHERE `" . self::getPKFieldName() . "` = " . $this->$pkfieldname;
                 $sqlstring .= "; \n";
 //                echo $sqlstring . "<br>";
-                $connection = ConnectionManager::getInstance()->get($currentclass::$connection);
+                $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
                 $result = $connection->query($sqlstring);
                 $connection->close();
 
@@ -828,14 +828,14 @@ class Model {
                 $this->clearAttributeValues();
                 $this->__newrecord = true;
             } else {
-                $dbname = ConnectionManager::getInstance()->get($currentclass::$connection)->getDatabase();
+                $dbname = ConnectionManager::getInstance()->getConnection($currentclass::$connection)->getDatabase();
                 $sqlstring = "DELETE FROM " . $dbname . "." . $currentclass::$table_name . " \n";
                 $sqlstring .= " ";
                 $pkfieldname = self::getPKFieldName();
                 $sqlstring .= "WHERE `" . self::getPKFieldName() . "` = " . $this->$pkfieldname;
                 $sqlstring .= "; \n";
 //                echo $sqlstring . "<br>";
-                $connection = ConnectionManager::getInstance()->get($currentclass::$connection);
+                $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
                 $result = $connection->query($sqlstring);
                 $connection->close();
                 $this->cleanFlagDirty();
@@ -853,7 +853,7 @@ class Model {
     
     public static function createOrUpdateTable() {
         $currentclass = get_called_class();
-        $connection = ConnectionManager::getInstance()->get($currentclass::$connection);
+        $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
         if (!$currentclass::tableExists()) {
             $createstatement = $currentclass::generateSQLCreateTable();
             $result = $connection->query($createstatement);
