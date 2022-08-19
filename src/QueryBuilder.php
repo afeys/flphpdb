@@ -211,7 +211,7 @@ class QueryBuilder {
         $currentclass = $this->classname;
         if ($currentclass::attributeExists("deleted_at")) {
             $deletefilter = " isnull(deleted_at) ";
-            if (strlen(trim($this->where)) > 0) {
+            if (strlen(trim('' . $this->where)) > 0) {  // added the '' because PHP8.1 does no longer support passing a null value to trim
                 $this->where = "(" . $this->where . ") and " . $deletefilter;
             } else {
                 $this->where = $deletefilter;
