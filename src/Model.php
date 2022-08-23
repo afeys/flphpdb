@@ -569,7 +569,7 @@ class Model {
         return call_user_func_array('static::find', array_merge(array('all'), array("conditions" => $args)));
     }
     
-    public static function find() {
+    public static function find($what="",$conditions=array()) {
         // there can be one or two function parameters
         // the first one (mandatory) can be:
         // - an id of a record 
