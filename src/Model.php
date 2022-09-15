@@ -801,7 +801,7 @@ class Model {
                     }
                     $parameters = $attributes[$attributename];
                     if ($this->typeIsNumeric($parameters["type"] )) {
-                        if ($this->name === "" || is_null($this->name)) {
+                        if ($this->$attributename === "" || is_null($this->$attributename)) {
                             $sqlstring .=  "`" . $attributename . "` = null";
                         } else {
                             $sqlstring .= "`" . $attributename . "` = " . $this->$attributename;
