@@ -403,6 +403,15 @@ class Model {
         return false;
     }
 
+    public function fixLength($parameters, $value) {
+        // if value is longer than the defined length for this field, then cut off the rest.
+        if (array_key_exists("length", $parameters)) {
+            $maxlength = $parameters['length'];
+            return substr($value, 0, $maxlength);
+        }
+        return $value;
+    }
+
     public static function attributeExists($attributename) {
         $currentclass = get_called_class();
         $attributes = $currentclass::$attributes;
@@ -753,7 +762,7 @@ class Model {
                             $valuesstring .= $this->$name;
                         }
                     } else {
-                        $valuesstring .= "'" . $this->$name . "'";
+                        $valuesstring .= "'" .  $this->fixLength($parameters, $this->$name) . "'";
                     }
                 }
                 $i++;
@@ -807,7 +816,7 @@ class Model {
                             $sqlstring .= "`" . $attributename . "` = " . $this->$attributename;
                         }
                     } else {
-                        $sqlstring .= "`" . $attributename . "` = '" . $this->$attributename . "'";
+                        $sqlstring .= "`" . $attributename . "` = '" . $this->fixLength($parameters, $this->$attributename) . "'";
                     }
                     $i++;
                 }
