@@ -395,6 +395,13 @@ class Model {
     public function isNewRecord() {
         return $this->__newrecord;
     }
+    public function  typeIsNumeric($type) {
+        $type = strtolower($type);
+        if ($type === "int" || $type === "bigint" || $type === "integer" || $type === "smallint" || $type === "tinyint" || $type === "mediumint" || $type === "decimal" || $type === "float" || $type === "numeric" || $type === "double") {
+            return true;
+        }
+        return false;
+    }
 
     public static function attributeExists($attributename) {
         $currentclass = get_called_class();
@@ -739,7 +746,15 @@ class Model {
                 if ($this->$name == null) {
                     $valuesstring .= "null";
                 } else {
-                    $valuesstring .= "'" . $this->$name . "'";
+                    if ($this->typeIsNumeric($parameters["type"] )) {
+                        if ($this->name === "" || is_null($this->name)) {
+                            $valuestring .= "null";
+                        } else {
+                            $valuesstring .= $this->$name;
+                        }
+                    } else {
+                        $valuesstring .= "'" . $this->$name . "'";
+                    }
                 }
                 $i++;
             }
@@ -779,11 +794,21 @@ class Model {
                 $sqlstring = "UPDATE " . $dbname . "." . $currentclass::$table_name . " \n";
                 $sqlstring .= "SET \n";
                 $i = 0;
+                $attributes = $currentclass::$attributes;
                 foreach ($dirtyattributes as $attributename => $isdirty) {
                     if ($i > 0) {
                         $sqlstring .= ", \n";
                     }
-                    $sqlstring .= "`" . $attributename . "` = '" . $this->$attributename . "'";
+                    $parameters = $attributes[$attributename];
+                    if ($this->typeIsNumeric($parameters["type"] )) {
+                        if ($this->name === "" || is_null($this->name)) {
+                            $sqlstring .=  "`" . $attributename . "` = null";
+                        } else {
+                            $sqlstring .= "`" . $attributename . "` = " . $this->$attributename;
+                        }
+                    } else {
+                        $sqlstring .= "`" . $attributename . "` = '" . $this->$attributename . "'";
+                    }
                     $i++;
                 }
                 $sqlstring .= " ";
