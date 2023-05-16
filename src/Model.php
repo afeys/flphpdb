@@ -756,7 +756,7 @@ class Model {
                     $valuesstring .= "null";
                 } else {
                     if ($this->typeIsNumeric($parameters["type"] )) {
-                        if ($this->name === "" || is_null($this->name)) {
+                        if ($this->$name === "" || is_null($this->$name)) {
                             $valuestring .= "null";
                         } else {
                             $valuesstring .= $this->$name;
