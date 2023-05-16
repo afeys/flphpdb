@@ -115,7 +115,7 @@ class QueryBuilder {
         $helper = StringHelper::getInstance($wherestring);
         for ($i = 0; $i < count($args); $i++) {
             for ($i = 0; $i < count($args); $i++) {
-                $helper->replace("?", "[?" . $i . "]", StringHelper::FIRST);
+                $helper->replace("?", "[[" . $i . "]", StringHelper::FIRST);
             }
         }
         for ($i = 0; $i < count($args); $i++) {
@@ -123,14 +123,14 @@ class QueryBuilder {
                 $paramvalue = $args[$i];
                 if (is_array($paramvalue)) {
                     $replacewith = implode(',', array_fill(0, count($paramvalue), '?')); //create x question marks
-                    $helper->replace("[?" . $i . "]", $replacewith, StringHelper::FIRST);
+                    $helper->replace("[[" . $i . "]", $replacewith, StringHelper::FIRST);
                     $containsarray = true;
                 }
             }
         }
         for ($i = 0; $i < count($args); $i++) {
             for ($i = 0; $i < count($args); $i++) {
-                $helper->replace("[?" . $i . "]", "?", StringHelper::FIRST);
+                $helper->replace("[[" . $i . "]", "?", StringHelper::FIRST);
             }
         }
         return $helper->toString();
