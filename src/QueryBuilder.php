@@ -168,6 +168,7 @@ class QueryBuilder {
     private function constructWhereString($args) {
         $this->where_values = array();
         $num_args = count($args);
+        $wherestring = "";
         if ($num_args > 0) {
             if ($num_args == 1) {
                 $wherestring = $args[0];
