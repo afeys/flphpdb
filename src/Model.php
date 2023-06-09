@@ -768,9 +768,9 @@ class Model {
                             $valuestring .= "null";
                         } else {
                             if ($this->typeIsNumeric($parameters["type"] )) {
-                                $sqlstring .= "`" . $attributename . "` = " . $this->$name;
+                                $valuesstring .= $this->$name;
                             } else {
-                                $sqlstring .= "`" . $attributename . "` = '" . $this->$name . "'";
+                                $valuesstring .= "'" . $this->$name . "'";
                             }
                         }
                     } else {
