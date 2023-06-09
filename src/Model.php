@@ -403,6 +403,14 @@ class Model {
         return false;
     }
 
+    public function typeIsDate($type) {
+        $type = strtolower($type);
+        if ($type === "date" || $type === "timestamp") {
+            return true;
+        }
+        return false;
+    }
+
     public function fixLength($parameters, $value) {
         // if value is longer than the defined length for this field, then cut off the rest.
         if (array_key_exists("length", $parameters)) {
@@ -755,7 +763,7 @@ class Model {
                 if ($this->$name == null) {
                     $valuesstring .= "null";
                 } else {
-                    if ($this->typeIsNumeric($parameters["type"] )) {
+                    if ($this->typeIsNumeric($parameters["type"] ) || $this->typeIsDate($parameters["type"])) {
                         if ($this->$name === "" || is_null($this->$name)) {
                             $valuestring .= "null";
                         } else {
@@ -809,7 +817,7 @@ class Model {
                         $sqlstring .= ", \n";
                     }
                     $parameters = $attributes[$attributename];
-                    if ($this->typeIsNumeric($parameters["type"] )) {
+                    if ($this->typeIsNumeric($parameters["type"] ) || $this->typeIsDate($parameters["type"])) {
                         if ($this->$attributename === "" || is_null($this->$attributename)) {
                             $sqlstring .=  "`" . $attributename . "` = null";
                         } else {
