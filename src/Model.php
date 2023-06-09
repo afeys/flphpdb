@@ -767,7 +767,11 @@ class Model {
                         if ($this->$name === "" || is_null($this->$name)) {
                             $valuestring .= "null";
                         } else {
-                            $valuesstring .= $this->$name;
+                            if ($this->typeIsNumeric($parameters["type"] )) {
+                                $sqlstring .= "`" . $attributename . "` = " . $this->$name;
+                            } else {
+                                $sqlstring .= "`" . $attributename . "` = '" . $this->$name . "'";
+                            }
                         }
                     } else {
                         $valuesstring .= "'" .  $this->fixLength($parameters, $this->$name) . "'";
@@ -821,7 +825,11 @@ class Model {
                         if ($this->$attributename === "" || is_null($this->$attributename)) {
                             $sqlstring .=  "`" . $attributename . "` = null";
                         } else {
-                            $sqlstring .= "`" . $attributename . "` = " . $this->$attributename;
+                            if ($this->typeIsNumeric($parameters["type"] )) {
+                                $sqlstring .= "`" . $attributename . "` = " . $this->$attributename;
+                            } else {
+                                $sqlstring .= "`" . $attributename . "` = '" . $this->$attributename . "'";
+                            }
                         }
                     } else {
                         $sqlstring .= "`" . $attributename . "` = '" . $this->fixLength($parameters, $this->$attributename) . "'";
