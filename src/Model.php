@@ -241,7 +241,9 @@ class Model {
         foreach ($currentclass::$attributes as $name => $parameters) {
             if (is_array($parameters)) {
                 if (array_key_exists("pk", $parameters)) {
-                    return $name;
+                    if ($parameters["pk"]) {
+                        return $name;
+                    }
                 }
             }
         }
@@ -274,9 +276,10 @@ class Model {
         if (array_key_exists('title', $attributes)) {
             return $this->title;
         }
-        if (array_key_exists('description', $_attributes)) {
+        if (array_key_exists('description', $attributes)) {
             return $this->description;
         }
+        $pkfieldname = self::getPKFieldName();
         return $this->$pkfieldname;
     }
     
@@ -685,6 +688,7 @@ class Model {
     // --------------------------------------------------------------------------------------//
 
     public function quote($value) {
+        $currentclass = get_called_class();
         $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
         return $connection->quote($value);
     }
