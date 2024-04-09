@@ -687,7 +687,7 @@ class Model {
     // VALIDATION FUNCTIONS                                                                  //
     // --------------------------------------------------------------------------------------//
 
-    public function quote($value, $type) {
+    public function quote($value, $type ="") {
         $currentclass = get_called_class();
         $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
         if ($this->typeIsNumeric($type)) {
