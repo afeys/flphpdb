@@ -687,9 +687,68 @@ class Model {
     // VALIDATION FUNCTIONS                                                                  //
     // --------------------------------------------------------------------------------------//
 
-    public function quote($value) {
+    public function quote($value, $type) {
         $currentclass = get_called_class();
         $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
+        if ($this->typeIsNumeric($type)) {
+//            if ($type === "int" || $type === "bigint" || $type === "integer" || $type === "smallint" || $type === "tinyint" || $type === "mediumint" || $type === "decimal" || $type === "float" || $type === "numeric" || $type === "double") {
+            $type = strtolower($type);
+            switch ($type) {
+                case 'int':
+                case 'bigint':
+                case 'integer':
+                case 'smallint':
+                case 'tinyint':
+                case 'mediumint':
+                    // PHP does not distinguish between these integer types.
+                    // filter_var returns the filtered data on success, or FALSE on failure.
+                    $filteredValue = filter_var($value, FILTER_VALIDATE_INT);
+                    return $filteredValue === false ? 0 : $filteredValue;
+                case 'decimal':
+                case 'float':
+                case 'numeric':
+                case 'double':
+                    // For floating point numbers, PHP's FILTER_VALIDATE_FLOAT
+                    $filteredValue = filter_var($value, FILTER_VALIDATE_FLOAT);
+                    return $filteredValue === false ? 0 : $filteredValue;
+                default:
+                    // If an unsupported type is provided, return 0.
+                    return 0;
+            }
+        }
+
+        if ($this->typeIsDate($type)) {
+            // date or timestamp         if ($type === "date" || $type === "timestamp") {
+            try {
+                switch (strtolower($type)) {
+                    case 'date':
+                        // Attempt to parse the date. If the format is incorrect, an exception will be thrown.
+                        $date = new DateTime($value);
+                        // Format the date to Y-m-d to check if the input was indeed a valid date without time.
+                        return $date->format('Y-m-d') === $value ? $value : '';
+
+                    case 'timestamp':
+                        // Check if the value is an integer or a string representing an integer.
+                        if ((string)(int)$value == (string)$value) {
+                            // Attempt to create a DateTime object from the timestamp.
+                            // This will throw an exception if the timestamp is out of range.
+                            $date = new DateTime('@' . $value);
+                            // If no exception was thrown, return the original value.
+                            return $value;
+                        } else {
+                            // If the value cannot be converted to a timestamp, return '0'.
+                            return '';
+                        }
+
+                    default:
+                        // If an unsupported type is provided, return '0'.
+                        return '';
+                }
+            } catch (Exception $e) {
+                // If an exception is caught, it means the date or timestamp was invalid.
+                return '';
+            }
+        }
         return $connection->getConnection()->quote($value);
     }
 
@@ -776,7 +835,7 @@ class Model {
                         if ($this->$name === "" || is_null($this->$name)) {
                             $valuestring .= "null";
                         } else {
-                            $valuesstring .= $this->quote($this->$name);
+                            $valuesstring .= $this->quote($this->$name, $parameters["type"]);
                         }
                     } else {
                         $valuesstring .= $this->quote($this->fixLength($parameters, $this->$name)) ;
@@ -831,7 +890,7 @@ class Model {
                             $sqlstring .=  "`" . $attributename . "` = null";
                         } else {
                             if ($this->typeIsNumeric($parameters["type"] )) {
-                                $sqlstring .= "`" . $attributename . "` = " . $this->quote($this->$attributename);
+                                $sqlstring .= "`" . $attributename . "` = " . $this->quote($this->$attributename, $parameters["type"]);
                             } else {
                                 $sqlstring .= "`" . $attributename . "` = " . $this->quote($this->$attributename);
                             }
