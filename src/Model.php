@@ -683,7 +683,12 @@ class Model {
     // --------------------------------------------------------------------------------------//
     // VALIDATION FUNCTIONS                                                                  //
     // --------------------------------------------------------------------------------------//
-    
+
+    public function quote($value) {
+        $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
+        return $connection->quote($value);
+    }
+
     public function validate() {
         // override this function in the model if needed!
         return true;
@@ -768,13 +773,13 @@ class Model {
                             $valuestring .= "null";
                         } else {
                             if ($this->typeIsNumeric($parameters["type"] )) {
-                                $valuesstring .= $this->$name;
+                                $valuesstring .= $this->quote($this->$name);
                             } else {
-                                $valuesstring .= "'" . $this->$name . "'";
+                                $valuesstring .= "'" . $this->quote($this->$name) . "'";
                             }
                         }
                     } else {
-                        $valuesstring .= "'" .  $this->fixLength($parameters, $this->$name) . "'";
+                        $valuesstring .= "'" .  $this->quote($this->fixLength($parameters, $this->$name)) . "'";
                     }
                 }
                 $i++;
@@ -826,13 +831,13 @@ class Model {
                             $sqlstring .=  "`" . $attributename . "` = null";
                         } else {
                             if ($this->typeIsNumeric($parameters["type"] )) {
-                                $sqlstring .= "`" . $attributename . "` = " . $this->$attributename;
+                                $sqlstring .= "`" . $attributename . "` = " . $this->quote($this->$attributename);
                             } else {
-                                $sqlstring .= "`" . $attributename . "` = '" . $this->$attributename . "'";
+                                $sqlstring .= "`" . $attributename . "` = '" . $this->quote($this->$attributename) . "'";
                             }
                         }
                     } else {
-                        $sqlstring .= "`" . $attributename . "` = '" . $this->fixLength($parameters, $this->$attributename) . "'";
+                        $sqlstring .= "`" . $attributename . "` = '" . $this->quote($this->fixLength($parameters, $this->$attributename)) . "'";
                     }
                     $i++;
                 }
