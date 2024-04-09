@@ -776,14 +776,10 @@ class Model {
                         if ($this->$name === "" || is_null($this->$name)) {
                             $valuestring .= "null";
                         } else {
-                            if ($this->typeIsNumeric($parameters["type"] )) {
-                                $valuesstring .= $this->quote($this->$name);
-                            } else {
-                                $valuesstring .= "'" . $this->quote($this->$name) . "'";
-                            }
+                            $valuesstring .= $this->quote($this->$name);
                         }
                     } else {
-                        $valuesstring .= "'" .  $this->quote($this->fixLength($parameters, $this->$name)) . "'";
+                        $valuesstring .= $this->quote($this->fixLength($parameters, $this->$name)) ;
                     }
                 }
                 $i++;
@@ -837,11 +833,11 @@ class Model {
                             if ($this->typeIsNumeric($parameters["type"] )) {
                                 $sqlstring .= "`" . $attributename . "` = " . $this->quote($this->$attributename);
                             } else {
-                                $sqlstring .= "`" . $attributename . "` = '" . $this->quote($this->$attributename) . "'";
+                                $sqlstring .= "`" . $attributename . "` = " . $this->quote($this->$attributename);
                             }
                         }
                     } else {
-                        $sqlstring .= "`" . $attributename . "` = '" . $this->quote($this->fixLength($parameters, $this->$attributename)) . "'";
+                        $sqlstring .= "`" . $attributename . "` = " . $this->quote($this->fixLength($parameters, $this->$attributename));
                     }
                     $i++;
                 }
