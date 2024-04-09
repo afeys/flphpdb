@@ -690,7 +690,7 @@ class Model {
     public function quote($value) {
         $currentclass = get_called_class();
         $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
-        return $connection->quote($value);
+        return $connection->getConnection()->quote($value);
     }
 
     public function validate() {
