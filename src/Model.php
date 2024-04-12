@@ -703,17 +703,25 @@ class Model {
                     // PHP does not distinguish between these integer types.
                     // filter_var returns the filtered data on success, or FALSE on failure.
                     $filteredValue = filter_var($value, FILTER_VALIDATE_INT);
-                    return $filteredValue === false ? 0 : $filteredValue;
+                    if ($filteredValue === false) {
+                        $value = 0;
+                    } else {
+                        $value = $filteredValue;
+                    }
                 case 'decimal':
                 case 'float':
                 case 'numeric':
                 case 'double':
                     // For floating point numbers, PHP's FILTER_VALIDATE_FLOAT
                     $filteredValue = filter_var($value, FILTER_VALIDATE_FLOAT);
-                    return $filteredValue === false ? 0 : $filteredValue;
+                    if ($filteredValue === false) {
+                        $value = 0;
+                    } else {
+                        $value = $filteredValue;
+                    }
                 default:
                     // If an unsupported type is provided, return 0.
-                    return 0;
+                    $value = 0;
             }
         }
 
@@ -725,28 +733,11 @@ class Model {
                         // Attempt to parse the date. If the format is incorrect, an exception will be thrown.
                         $date = new DateTime($value);
                         // Format the date to Y-m-d to check if the input was indeed a valid date without time.
-                        return $date->format('Y-m-d') === $value ? $value : '';
+                        $value =  $date->format('Y-m-d') === $value ? $value : '';
 
-                    case 'timestamp':
-                        // Check if the value is an integer or a string representing an integer.
-                        if ((string)(int)$value == (string)$value) {
-                            // Attempt to create a DateTime object from the timestamp.
-                            // This will throw an exception if the timestamp is out of range.
-                            $date = new DateTime('@' . $value);
-                            // If no exception was thrown, return the original value.
-                            return $value;
-                        } else {
-                            // If the value cannot be converted to a timestamp, return '0'.
-                            return '';
-                        }
-
-                    default:
-                        // If an unsupported type is provided, return '0'.
-                        return '';
                 }
             } catch (Exception $e) {
                 // If an exception is caught, it means the date or timestamp was invalid.
-                return '';
             }
         }
         return $connection->getConnection()->quote($value);
