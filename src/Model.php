@@ -1042,17 +1042,17 @@ class Model {
                     $collationstring = "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
                 }
                 $typestring = $type;
-                if (!isEmpty($length) && strtolower($type) !== "date" && strtolower($type) !== "timestamp") {
+                if (!($length == 0 || $length == null || $length == "") && strtolower($type) !== "date" && strtolower($type) !== "timestamp") {
                     $typestring .= "(" . $length . ")";
                 }
                 $defaultstring = "";
-                if (!isEmpty($default) && $default !== "NOT NULL") {
+                if (!($default == 0 || $default == null || $default == "") && $default !== "NOT NULL") {
                     $defaultstring = " DEFAULT " . $default;
                 } else {
                     $defaultstring = $default;
                 }
                 $autoincstring = "";
-                if (!isEmpty($autoinc)) {
+                if (!($autoinc == 0 || $autoinc == null || $autoinc == "")) {
                     if ($autoinc === true) {
                         $autoincstring = "AUTO_INCREMENT";
                     }
