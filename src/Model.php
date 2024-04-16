@@ -708,6 +708,7 @@ class Model {
                     } else {
                         $value = $filteredValue;
                     }
+                    break;
                 case 'decimal':
                 case 'float':
                 case 'numeric':
@@ -719,6 +720,7 @@ class Model {
                     } else {
                         $value = $filteredValue;
                     }
+                    break;
                 default:
                     // If an unsupported type is provided, return 0.
                     $value = 0;
@@ -734,6 +736,7 @@ class Model {
                         $date = new DateTime($value);
                         // Format the date to Y-m-d to check if the input was indeed a valid date without time.
                         $value =  $date->format('Y-m-d') === $value ? $value : '';
+                        break;
 
                 }
             } catch (Exception $e) {
