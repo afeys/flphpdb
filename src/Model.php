@@ -733,7 +733,7 @@ class Model {
                 switch (strtolower($type)) {
                     case 'date':
                         // Attempt to parse the date. If the format is incorrect, an exception will be thrown.
-                        $date = new DateTime($value);
+                        $date = new \DateTime($value);
                         // Format the date to Y-m-d to check if the input was indeed a valid date without time.
                         $value =  $date->format('Y-m-d') === $value ? $value : '';
                         break;
