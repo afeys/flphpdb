@@ -53,6 +53,7 @@ class Model {
     private $__attributes = array();
     private $__newrecord = true; // this is true for a new record, false for an already existing record
     private $__dirty = null;   // this flags if attributes have been changed (needed for update operation)
+    private $__originalvalues = null; // this contains the original value for the attributes in the $__dirty array (needed for after_save actions which need the original value)
     private $__validation_messages = array();
     private $__ignore_attributes = false;
 
@@ -88,6 +89,7 @@ class Model {
         $currentclass = get_called_class();
         $attributes = $currentclass::$attributes;
         if (array_key_exists($property, $attributes)) {
+            $this->setOriginalValue($property);
             $this->__attributes[$property] = $value;
             $this->setFlagDirty($property);
         } else {
@@ -317,6 +319,18 @@ class Model {
     public function getDirtyAttributes() {
         return $this->__dirty;
     }
+    public function getOriginalValues() {
+        return $this->__originalvalues;
+    }
+
+    public function getOriginalValue($name) {
+        if (is_array($this->__originalvalues)) {
+            if (array_key_exists($name, $this->__originalvalues)) {
+                return $this->__originalvalues[$name];
+            }
+        }
+        return $this->$name;
+    }
 
     public function toArray() {
         $returnvalue = array();
@@ -382,6 +396,11 @@ class Model {
         $this->__dirty[$name] = true;
     }
 
+    public function setOriginalValue($name) {
+        if (!$this->__originalvalues)
+            $this->__originalvalues = array();
+        $this->__originalvalues[$name] = $this->$name;
+    }
     public function cleanFlagDirty() {
         $this->__dirty = array();
     }
