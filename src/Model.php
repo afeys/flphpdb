@@ -229,6 +229,15 @@ class Model {
     // GETTER FUNCTIONS                                                                      //
     // --------------------------------------------------------------------------------------//
 
+    public function getAttributeValuesAsArray() {
+        $currentclass = get_called_class();
+        $valuearray = array();
+        foreach($currentclass::$attributes as $name => $attribute) {
+            $valuearray[$name] = $this->$name;
+        }
+        return $valuearray;
+    }
+
     public function getExtendedAttributeValues() {
         // this return the __attributes property. This property contains the full set of 
         // datafields. when the find is done with a 'usetable' option (to get data from a view
