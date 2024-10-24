@@ -855,7 +855,7 @@ class Model {
                 } else {
                     if ($this->typeIsNumeric($parameters["type"] ) || $this->typeIsDate($parameters["type"])) {
                         if ($this->$name === "" || is_null($this->$name)) {
-                            $valuestring .= "null";
+                            $valuesstring .= "null";
                         } else {
                             $valuesstring .= $this->quote($this->$name, $parameters["type"]);
                         }
