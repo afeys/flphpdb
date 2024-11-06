@@ -818,6 +818,7 @@ class Model {
             $this->cleanFlagDirty();
         }
         $this->after_save();
+        return true;
     }
 
     public function insert($validate = true) {
@@ -897,6 +898,9 @@ class Model {
                 if (!$this->after_validation_on_update()) {
                     return false;
                 }
+                $dirtyattributes = $this->getDirtyAttributes(); // we have to reinit dirtyattributes here, to account
+                                                                // for any fields that have been changed in the validate
+                                                                // or before/after validation routines
                 $dbname = ConnectionManager::getInstance()->getConnection($currentclass::$connection)->getDatabase();
                 $sqlstring = "UPDATE " . $dbname . "." . $currentclass::$table_name . " \n";
                 $sqlstring .= "SET \n";
