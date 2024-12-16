@@ -482,19 +482,23 @@ class Model {
     // --------------------------------------------------------------------------------------//
     
     public static function all() {
-        return call_user_func_array('static::find', array_merge(array('all'), func_get_args()));
+        return static::find(...array_merge(['all'], func_get_args()));
+        //return call_user_func_array('static::find', array_merge(array('all'), func_get_args()));
     }
 
     public static function first() {
-        return call_user_func_array('static::find', array_merge(array('first'), func_get_args()));
+        return static::find(...array_merge(['first'], func_get_args()));
+        //return call_user_func_array('static::find', array_merge(array('first'), func_get_args()));
     }
 
     public static function last() {
-        return call_user_func_array('static::find', array_merge(array('last'), func_get_args()));
+        return static::find(...array_merge(['last'], func_get_args()));
+        //return call_user_func_array('static::find', array_merge(array('last'), func_get_args()));
     }
 
     public static function countNumberOfRecords() {
-        return call_user_func_array('static::find', array_merge(array('reccount'), func_get_args()));
+        return static::find(...array_merge(['reccount'], func_get_args()));
+//        return call_user_func_array('static::find', array_merge(array('reccount'), func_get_args()));
     }
     
 
@@ -571,7 +575,8 @@ class Model {
             $sqlstring .= self::getPKFieldName() . " = " . $instring . " \n";
         }
         $args = array("conditions" => array_merge(array($sqlstring)));
-        $rowsfound =  call_user_func_array('static::find', array_merge(array($findwhat), array("conditions" => $args)));
+        $rowsfound = static::find($findwhat, ["conditions" => $args]);
+        //$rowsfound =  call_user_func_array('static::find', array_merge(array($findwhat), array("conditions" => $args)));
 
         if ($findwhat === "all") {
             if (count($rowsfound) !== $expected) {
@@ -621,7 +626,8 @@ class Model {
             $sqlstring .= ")";
         }
         $args = array("conditions" => array_merge(array($sqlstring), $values));
-        return call_user_func_array('static::find', array_merge(array('all'), array("conditions" => $args)));
+        return static::find('all', ["conditions" => $args]);
+        //return call_user_func_array('static::find', array_merge(array('all'), array("conditions" => $args)));
     }
     
     public static function find($what="",$conditions=array()) {
