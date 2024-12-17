@@ -48,11 +48,11 @@ class QueryBuilder {
     }
 
     public static function reverseOrder($orderstring) {
-        if (!trim($order)) {
-            return $order;
+        if (!trim($orderstring)) {
+            return $orderstring;
         }
 
-        $parts = explode(',', $order);
+        $parts = explode(',', $orderstring);
 
         for ($i = 0, $n = count($parts); $i < $n; ++$i) {
             $v = strtolower($parts[$i]);
@@ -171,9 +171,11 @@ class QueryBuilder {
         $wherestring = "";
         if ($num_args > 0) {
             if ($num_args == 1) {
-                $wherestring = $args[0];
+//                $wherestring = $args[0];
+                $wherestring = reset($args);
             } else {
-                $wherestring = $args[0];
+//                $wherestring = $args[0];
+                $wherestring = reset($args);
                 array_shift($args); // removes the first item from the array
                 // count number of ? characters in the wherestring
                 $numberofparametersexpected = StringHelper::getInstance($wherestring)->countOccurrences('?');
