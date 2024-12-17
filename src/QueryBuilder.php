@@ -173,9 +173,17 @@ class QueryBuilder {
             if ($num_args == 1) {
 //                $wherestring = $args[0];
                 $wherestring = reset($args);
+                if (is_array($wherestring)) {
+                    $wherestring = implode( " and ", $wherestring);
+                }
+
             } else {
 //                $wherestring = $args[0];
                 $wherestring = reset($args);
+                if (is_array($wherestring)) {
+                    $wherestring = implode( " and ", $wherestring);
+                }
+
                 array_shift($args); // removes the first item from the array
                 // count number of ? characters in the wherestring
                 $numberofparametersexpected = StringHelper::getInstance($wherestring)->countOccurrences('?');
