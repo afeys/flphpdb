@@ -638,7 +638,7 @@ class Model {
         // the second one (which is optional)
         // - an array with query conditions
         $currentclass = get_called_class();
-        if (func_num_args() <= 0) {
+        if (func_num_args() <= 0 || $what == null) { // you should at least tell us what to find....
             throw new NoRecordsFoundException("Couldn't find $currentclass without an ID");
         }
         $args = func_get_args();
