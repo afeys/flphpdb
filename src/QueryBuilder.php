@@ -2,6 +2,8 @@
 
 namespace FL;
 
+use MongoDB\Driver\Query;
+
 class QueryBuilder {
 
     private $connection = null;
@@ -18,6 +20,7 @@ class QueryBuilder {
     // for where
     private $where;
     private $where_values = array();
+
     static $QUOTE_CHARACTER = '`';
 
     public function __construct($classname, $options, $connection = null) {
@@ -32,7 +35,7 @@ class QueryBuilder {
             $this->connection = ConnectionManager::getInstance()->getConnection($classname::$connection);
         }
         $this->database = $this->connection->getDatabase();
-        
+
 //        echo "<pre>"; print_r($options); echo "</pre>";
         if (array_key_exists("usetable",$options)) {
             $this->table = $options['usetable'];
@@ -110,7 +113,7 @@ class QueryBuilder {
 
     private function handleInClauses($wherestring, $args) {
         // 1. replace all ? in the wherestring with [?$i] where $i is their sequential order number
-        // 2. replace the relevant [?$i] for params with an arrayvalue with the appropriate number of ? 
+        // 2. replace the relevant [?$i] for params with an arrayvalue with the appropriate number of ?
         // 3. replace the remaining [?$i] back to simple ?
         $helper = StringHelper::getInstance($wherestring);
         for ($i = 0; $i < count($args); $i++) {
@@ -136,33 +139,97 @@ class QueryBuilder {
         return $helper->toString();
     }
 
-    private function processValue($value) {
-        return $value;
-        /* if ($value === null)
-          return null;
+    private static function mapPlaceholdersToFields($queryString) {
+        // Split the query string by '?'
+        $parts = preg_split('/\?/', $queryString);
+        $fields = [];
 
-          switch ($this->type)
-          {
-          case self::STRING:	return (string)$value;
-          case self::INTEGER:	return (int)$value;
-          case self::DECIMAL:	return (double)$value;
-          case self::DATETIME:
-          case self::DATE:
-          if (!$value)
-          return null;
+        // Traverse each part except the last (as the last part won't have a field)
+        for ($i = 0; $i < count($parts) - 1; $i++) {
+            // Extract the part before the '?'
+            $part = $parts[$i];
 
-          if ($value instanceof DateTime)
-          return $value;
+            // Use a regex to find the last field before this '?'
+            if (preg_match('/(\b\w+\b)(?=\s*(?:like|in|=|>|<|>=|<=|isnull|is not null|\)|\blike\b))/i', $part, $matches)) {
+                $fields[] = trim($matches[1]);
+            } else {
+                $fields[] = null; // If no field is found
+            }
+        }
+        return $fields;
+    }
 
-          if ($value instanceof \DateTime)
-          //					return new DateTime($value->format('Y-m-d H:i:s T'));
-          return new DateTime($value->format('Y-m-d H:i:s'));
+    private static function isValidForType($value, $type) {
+        $type = strtolower($type); // Normalize type to lowercase
+        $isValid = false;
 
-          return $connection->string_to_datetime($value);
-          }
-          return $value;
-         * 
-         */
+        switch ($type) {
+            // Numeric Types
+            case 'tinyint':
+                $isValid = filter_var($value, FILTER_VALIDATE_INT, ["options" => ["min_range" => -128, "max_range" => 127]]) !== false;
+                break;
+            case 'smallint':
+                $isValid = filter_var($value, FILTER_VALIDATE_INT, ["options" => ["min_range" => -32768, "max_range" => 32767]]) !== false;
+                break;
+            case 'mediumint':
+                $isValid = filter_var($value, FILTER_VALIDATE_INT, ["options" => ["min_range" => -8388608, "max_range" => 8388607]]) !== false;
+                break;
+            case 'int':
+            case 'integer':
+                $isValid = filter_var($value, FILTER_VALIDATE_INT) !== false;
+                break;
+            case 'bigint':
+                $isValid = is_numeric($value) && strlen((string)$value) <= 20 && $value >= -9223372036854775808 && $value <= 9223372036854775807;
+                break;
+            case 'decimal':
+            case 'numeric':
+            case 'float':
+            case 'double':
+            case 'real':
+                $isValid = filter_var($value, FILTER_VALIDATE_FLOAT) !== false;
+                break;
+
+            // Date and Time Types
+            case 'date':
+                $isValid = (bool) preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) && strtotime($value) !== false;
+                break;
+            case 'datetime':
+                $isValid = (bool) preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $value) && strtotime($value) !== false;
+                break;
+            case 'timestamp':
+                $isValid = (bool) preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $value) && strtotime($value) !== false;
+                break;
+            case 'time':
+                $isValid = (bool) preg_match('/^-?\d{1,3}:\d{2}:\d{2}$/', $value);
+                break;
+            case 'year':
+                $isValid = (bool) preg_match('/^\d{4}$/', $value) && (int)$value >= 1901 && (int)$value <= 2155;
+                break;
+
+            default:
+                return true;
+        }
+
+        return $isValid;
+    }
+    private function processValue($fields, $placeholderidx, $value) {
+        $returnvalue = $value;
+        // check for type of field, if date or numeric it has to be a valid date or a valid number
+        if (count($fields) > $placeholderidx) {
+            $fieldname = $fields[$placeholderidx];
+            $classname = $this->classname;
+            $attributes = $classname::$attributes;
+            if (array_key_exists($fieldname, $attributes)) {
+                $fieldinfo = $attributes[$fieldname];
+                if (array_key_exists("type", $fieldinfo)) {
+                    $type = $fieldinfo["type"];
+                    if (!QueryBuilder::isValidForType($value, $type)) {
+                        $returnvalue = null;
+                    }
+                }
+            }
+        }
+        return $returnvalue;
     }
 
     private function constructWhereString($args) {
@@ -188,7 +255,7 @@ class QueryBuilder {
                 // count number of ? characters in the wherestring
                 $numberofparametersexpected = StringHelper::getInstance($wherestring)->countOccurrences('?');
                 if ($numberofparametersexpected !== ($num_args - 1)) {
-                    // this is an error !!! 
+                    // this is an error !!!
                     throw new WrongParametersException("can't build query: number of parameters not correct");
                 }
                 // check if any of the values is an array. In that case the correct number of ? have to be inserted!
@@ -203,14 +270,15 @@ class QueryBuilder {
                     $wherestring = $this->handleInClauses($wherestring, $args);
                 }
                 $this->where = $wherestring;
+                $fieldnames = QueryBuilder::mapPlaceholdersToFields($this->where);
                 for ($i = 0; $i < count($args); $i++) {
                     $paramvalue = $args[$i];
                     if (is_array($paramvalue)) {
                         foreach ($paramvalue as $value) {
-                            $this->where_values[] = $this->processValue($value);
+                            $this->where_values[] = $this->processValue($fieldnames,$i, $value);
                         }
                     } else {
-                        $this->where_values[] = $this->processValue($paramvalue);
+                        $this->where_values[] = $this->processValue($fieldnames,$i, $paramvalue);
                     }
                 }
             }
@@ -252,7 +320,7 @@ class QueryBuilder {
         }
         $conn = $this->connection->getConnection();
         $stmt = $conn->prepare($sql);
-       //echo $sql;
+        //echo $sql;
         //$conn->setAttribute( \PDO::ATTR_ERRMODE, \PDO::ERRMODE_WARNING );
         return $stmt;
     }
