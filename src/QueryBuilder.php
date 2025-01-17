@@ -20,7 +20,7 @@ class QueryBuilder {
     // for where
     private $where;
     private $where_values = array();
-
+// test
     static $QUOTE_CHARACTER = '`';
 
     public function __construct($classname, $options, $connection = null) {
