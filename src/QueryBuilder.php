@@ -141,19 +141,28 @@ class QueryBuilder {
 
     private static function mapPlaceholdersToFields($queryString) {
         // Split the query string by '?'
-        $parts = preg_split('/\?/', $queryString);
+        //$parts = preg_split('/\?/', $queryString);
         $fields = [];
 
-        // Traverse each part except the last (as the last part won't have a field)
-        for ($i = 0; $i < count($parts) - 1; $i++) {
-            // Extract the part before the '?'
-            $part = $parts[$i];
-
-            // Use a regex to find the last field before this '?'
-            if (preg_match('/(\b\w+\b)(?=\s*(?:like|in|=|>|<|>=|<=|isnull|is not null|\)|\blike\b))/i', $part, $matches)) {
-                $fields[] = trim($matches[1]);
-            } else {
-                $fields[] = null; // If no field is found
+        if (preg_match_all('/(?:\b(\w+)\b(?=\s*(?:=|>|<|>=|<=|LIKE|IN\s*\(|IS\s+NULL|IS\s+NOT\s+NULL))|(?:YEAR|MONTH|DAY|ISNULL|COALESCE|MAX|MIN|AVG|SUM|COUNT)\(\s*(\w+)\s*\))/i',
+            $queryString,
+            $matches,
+            PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $fieldcomplete = $match[0];  // this contains the full field with function. i.e.  YEAR(datefrom)
+//echo "match\n";
+//print_r($match);
+                // Match[1] captures normal fields, Match[2] captures function fields
+                $field = $match[1] ?: $match[2];
+                $isfunction = false;
+                if (count($match) >= 3) {
+                    if ($match[2] !== "" && $match[2] !== null) {
+                        $isfunction = true;
+                    }
+                }
+                if ($field) {
+                    $fields[] = array(trim($field), $isfunction);
+                }
             }
         }
         return $fields;
@@ -216,15 +225,21 @@ class QueryBuilder {
         $returnvalue = $value;
         // check for type of field, if date or numeric it has to be a valid date or a valid number
         if (count($fields) > $placeholderidx) {
-            $fieldname = $fields[$placeholderidx];
+            $fieldname = $fields[$placeholderidx][0];
+            $fieldisfunction = $fields[$placeholderidx][1];
             $classname = $this->classname;
             $attributes = $classname::$attributes;
-            if (array_key_exists($fieldname, $attributes)) {
-                $fieldinfo = $attributes[$fieldname];
-                if (array_key_exists("type", $fieldinfo)) {
-                    $type = $fieldinfo["type"];
-                    if (!QueryBuilder::isValidForType($value, $type)) {
-                        $returnvalue = null;
+            if ($fieldisfunction == false) {
+                if (array_key_exists($fieldname, $attributes)) {
+                    echo ", attribute '" . $fieldname . "' exists ";
+                    $fieldinfo = $attributes[$fieldname];
+                    if (array_key_exists("type", $fieldinfo)) {
+                        echo ", array key type exists in fieldinfo and is " . $fieldinfo["type"] . " ";
+                        $type = $fieldinfo["type"];
+                        if (!QueryBuilder::isValidForType($value, $type)) {
+                            echo " but value '" . $value . "' is not a valid type '" . $type . "' of field '" . $fieldname . "' \n";
+                            $returnvalue = null;
+                        }
                     }
                 }
             }

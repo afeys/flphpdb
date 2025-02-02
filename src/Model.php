@@ -1015,7 +1015,13 @@ class Model {
         $connection->close();
     }
 
-    public static function generateSQLAlterTabel() {
+    public static function truncateTable() {
+        $currentclass = get_called_class();
+        $connection = ConnectionManager::getInstance()->getConnection($currentclass::$connection);
+        $result = $connection->query("TRUNCATE TABLE " . $currentclass::$table_name);
+        $connection->close();
+    }
+    public static function generateSQLAlterTable() {
 // TODO
     }
 
@@ -1037,7 +1043,7 @@ class Model {
                 $length = 255;
                 $autoinc = false;
                 $pk = false;
-                $default = "NULL";
+                $default = null;
                 $mandatory = false;
                 if (is_array($parameters)) {
                     if (array_key_exists("type", $parameters)) {
@@ -1078,10 +1084,8 @@ class Model {
                     $typestring .= "(" . $length . ")";
                 }
                 $defaultstring = "";
-                if (!($default == 0 || $default == null || $default == "") && $default !== "NOT NULL") {
+                if (!($default == null) && $mandatory !== true) {
                     $defaultstring = " DEFAULT " . $default;
-                } else {
-                    $defaultstring = $default;
                 }
                 $autoincstring = "";
                 if (!($autoinc == 0 || $autoinc == null || $autoinc == "")) {
