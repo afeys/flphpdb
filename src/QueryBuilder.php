@@ -231,13 +231,13 @@ class QueryBuilder {
             $attributes = $classname::$attributes;
             if ($fieldisfunction == false) {
                 if (array_key_exists($fieldname, $attributes)) {
-                    echo ", attribute '" . $fieldname . "' exists ";
+              //      echo ", attribute '" . $fieldname . "' exists ";
                     $fieldinfo = $attributes[$fieldname];
                     if (array_key_exists("type", $fieldinfo)) {
-                        echo ", array key type exists in fieldinfo and is " . $fieldinfo["type"] . " ";
+               //         echo ", array key type exists in fieldinfo and is " . $fieldinfo["type"] . " ";
                         $type = $fieldinfo["type"];
                         if (!QueryBuilder::isValidForType($value, $type)) {
-                            echo " but value '" . $value . "' is not a valid type '" . $type . "' of field '" . $fieldname . "' \n";
+                 //           echo " but value '" . $value . "' is not a valid type '" . $type . "' of field '" . $fieldname . "' \n";
                             $returnvalue = null;
                         }
                     }
