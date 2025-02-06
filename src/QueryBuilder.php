@@ -227,18 +227,22 @@ class QueryBuilder {
         if (count($fields) > $placeholderidx) {
             $fieldname = $fields[$placeholderidx][0];
             $fieldisfunction = $fields[$placeholderidx][1];
-            $classname = $this->classname;
-            $attributes = $classname::$attributes;
-            if ($fieldisfunction == false) {
-                if (array_key_exists($fieldname, $attributes)) {
-              //      echo ", attribute '" . $fieldname . "' exists ";
-                    $fieldinfo = $attributes[$fieldname];
-                    if (array_key_exists("type", $fieldinfo)) {
-               //         echo ", array key type exists in fieldinfo and is " . $fieldinfo["type"] . " ";
-                        $type = $fieldinfo["type"];
-                        if (!QueryBuilder::isValidForType($value, $type)) {
-                 //           echo " but value '" . $value . "' is not a valid type '" . $type . "' of field '" . $fieldname . "' \n";
-                            $returnvalue = null;
+            if (strpos($value, '%') !== false) {
+                // do nothing, we are searching for a like value.
+            } else {
+                $classname = $this->classname;
+                $attributes = $classname::$attributes;
+                if ($fieldisfunction == false) {
+                    if (array_key_exists($fieldname, $attributes)) {
+                        //    echo ", attribute '" . $fieldname . "' exists ";
+                        $fieldinfo = $attributes[$fieldname];
+                        if (array_key_exists("type", $fieldinfo)) {
+                            //    echo ", array key type exists in fieldinfo and is " . $fieldinfo["type"] . " ";
+                            $type = $fieldinfo["type"];
+                            if (!QueryBuilder::isValidForType($value, $type)) {
+                                //  echo " but value '" . $value . "' is not a valid type '" . $type . "' of field '" . $fieldname . "' \n";
+                                $returnvalue = null;
+                            }
                         }
                     }
                 }
